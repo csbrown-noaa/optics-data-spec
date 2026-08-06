@@ -1,18 +1,26 @@
 # NMFS Optics Data Cloud Migration: Minimum Viable Metadata Standard (MVS)
 
-**Version:** 0.2 (Draft for DMC Review - GCP Optimized)
-**Target Architecture:** Google Cloud Storage (GCS) + Serverless Query Engine (BigQuery / BigLake)
-**Base Specification:** SpatioTemporal Asset Catalog (STAC) v1.0.0
+- **Authors:** Optics SI Data Management Working Group (ODMWG)
+    - Scott Brown (scott.brown@noaa.gov)
+    - Matt Grossi (matt.grossi@noaa.gov)
+- **Version:** 0.2 (Draft for DMWG Review)
+- **Target Architecture:** Google Cloud Storage (GCS) + Serverless Query Engine (BigQuery / BigLake)
+- **Base Specification:** [SpatioTemporal Asset Catalog (STAC) v1.0.0](https://www.ogc.org/standards/stac/)
 
 ## 1. Executive Summary
 
-This document outlines the proposed metadata and storage standards for the NMFS-wide migration of optical data (images and video) to Google Cloud Platform (GCP). To avoid the costs and engineering bottlenecks of "lift-and-shift" database migrations, NMFS will adopt a **Decoupled Sidecar Architecture**.
+This document outlines the proposed metadata and storage standards for the NMFS-wide migration of optical data (images and video) to Google Cloud Platform (GCP). To avoid the costs and engineering bottlenecks of "lift-and-shift" database migrations, the Optics SI Data Management Working Group (ODMWG) recommends that NWFS adopt a **Decoupled Sidecar Architecture**.
 
-Instead of a centralized, highly structured relational database, metadata will be written to lightweight JSON files stored immediately adjacent to the optics files in Google Cloud Storage. This enables serverless discovery via BigQuery while providing individual research groups maximum flexibility for their bespoke ancillary data.
+Instead of a centralized, highly structured relational database, metadata will be written to lightweight JSON files stored immediately adjacent to the optics files in Google Cloud Storage. This enables serverless discovery via BigQuery while providing individual research groups maximum flexibility for their bespoke ancillary data. Additionally, a common standard facilitates common tooling, so that tools benefitting the entire NMFS optical community (and beyond) can benefit from tool development.  Further, adopting an existing broadly used sidecar metadata standard makes existing third-party tooling immediately available for use.  Lastly, a common standard facilitates easy transition to other indexing systems, such as [data.gov](https://data.gov/) and [NCEI](https://www.ncei.noaa.gov/archive/send2ncei/).
 
 ## 2. Storage Prefix Convention
 
-While cryptographic hashes prevent duplication, a purely flat bucket structure prevents manual inspection and complicates lifecycle management (e.g., migrating old surveys to Coldline or Archive storage classes). We propose a hybrid prefix approach.
+Cloud storage is flat, by nature.  
+This complicates ordinary filesystem operations that data managers take for granted - things as seemingly trivial as renaming a "directory" require the underlying hardware to create a physical copy of the data incurring large time and cost overhead [^1] [^2].  
+These considerations make a "lift-and-shift" of existing local data management procedures and standards difficult to maintain in the cloud.  Further, since metadata are often stored in these prefixes, then per-group design patterns complicate NMFS-wide indexing of data.  At the same time, a purely flat bucket structure with no metadata prevents manual inspection and complicates lifecycle management (e.g., migrating old surveys to Coldline or Archive storage classes). We propose a hybrid prefix approach.  The prefix format should be decided upon NMFS-wide to include the **minimum** amount of human-readable information that empowers users to manually evaluate the high-level properties of their data and that every media datum can reasonably provide.  For example, if every media file gathered by any survey NMFS wide can provide a year during which the file was gathered, and "year" is a crucial piece of metadata to evaluate whether a particular "dataset" has been uploaded, then "year" is a reasonable metadatum to include in this prefix.  Region and survey ID may be others.  It is not immediately a priori clear which set of variables would provide a unified structure and also an appropriate amount of human-readable metadata.  TODO: The ODMWG needs to survey the Optics SI groups to determine a standard here.
+
+[^1]:(https://docs.cloud.google.com/storage/docs/objects#flat-namespace)
+[^2]:(https://docs.nebius.com/object-storage/performance-cost-best-practices)
 
 **Proposed Standard Path:**
 `gs://[bucket-name]/[Year]/[Region]/[Survey_ID]/[sha256_hash].[ext]`
@@ -26,11 +34,11 @@ While cryptographic hashes prevent duplication, a purely flat bucket structure p
 
 ## 3. The STAC Item Standard (Sidecar JSON)
 
-Every optical asset uploaded to GCS MUST be accompanied by a STAC-compliant JSON sidecar file.
+Optical data metadata standard recommendation: Every optical asset uploaded to GCS MUST be accompanied by a STAC-compliant JSON sidecar file.
 
 ### 3.1 Core Requirements (Strictly Enforced)
 
-For BigQuery serverless discovery to function NMFS-wide, the following STAC fields are strictly required and must adhere to standard formats:
+For automated discovery to function NMFS-wide, the following STAC fields are strictly required and must adhere to standard formats:
 
 1. **`id`**: Must match the exact `sha256` hash of the optical file.
 
@@ -46,7 +54,7 @@ For BigQuery serverless discovery to function NMFS-wide, the following STAC fiel
 
 Individual groups maintain bespoke sensor suites and telemetry data. **Groups are not restricted in what they can upload.**
 
-* **Point-in-time data:** Can be added directly to the `properties` block using local namespace prefixes (e.g., `nefsc:habcam_altitude`). BigQuery will automatically infer these fields during JSON schema detection.
+* **Point-in-time data:** Can be added directly to the `properties` block using local namespace prefixes (e.g., `nefsc:habcam_altitude`). Automated tools such as BigQuery can automatically infer these fields during JSON schema detection, and can automate indexing as long as groups conform to a standardized vocabulary.
 
 * **High-frequency or complex data:** (e.g., continuous CTD casts, sonar backscatter, local Oracle DB dumps). Groups MUST NOT attempt to embed this in the STAC JSON. Instead, upload the raw file (CSV, NetCDF, Parquet) to a sub-prefix (e.g., `/ancillary/`) and link to it in the STAC `assets` dictionary.
 
@@ -111,9 +119,9 @@ Below is a complete, valid STAC Item demonstrating both the enforced MVS structu
 
 ## 6. Next Steps for Adoption
 
-1. **DMC Approval:** Finalize the GCS storage prefix and the required `nmfs:` vocabulary list.
+1. **ODMWG Approval:** Finalize the GCS storage prefix and the required `nmfs:` vocabulary list and the general metadata scheme.
 
 2. **Upload Script Development:** Develop a reference Python script that local groups can adapt. This script will query a local database, hash the target file, generate the STAC JSON, and push both to the GCS bucket.
 
-3. **BigQuery Integration:** Establish a BigLake connection or a BigQuery External Table pointing to the finalized GCS bucket structures. This will enable serverless SQL queries across all uploaded JSON metadata files natively within the GCP console.
+3. **Optional BigQuery Integration:** Establish a BigLake connection or a BigQuery External Table pointing to the finalized GCS bucket structures. This will enable serverless SQL queries across all uploaded JSON metadata files natively within the GCP console.
 
