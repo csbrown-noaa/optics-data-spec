@@ -1,6 +1,6 @@
 # Optics SI Data Managment Working Group
 
-TODO: Put together an official Optics SI Data Management Working Group.  This Working Group is tasked with defining data standards, and strategizing tool development to empower a unified structure for data and metadata within the Optics SI data lake, while maintaining the flexibility necessary to serve the mission for individual Optics-focused surveys.
+TODO: Put together an official Optics SI Data Management Working Group (ODMWG).  This Working Group is tasked with defining data standards, and strategizing tool development to empower a unified structure for data and metadata within the Optics SI data lake, while maintaining the flexibility necessary to serve the mission for individual Optics-focused surveys.  Likely, tooling for curation, upload, indexing and search will need to be available prior to widespread adoption of the standard, to at least minimally replace existing workflows built on individual groups' bespoke data management strategies.  The ODMWG should, in addition to developing a standard, plan a rollout schedule for these various standards and tools, and coordinate with data administrators to facilitate migration of old data into the new system.
 
 # Disclaimer
 
