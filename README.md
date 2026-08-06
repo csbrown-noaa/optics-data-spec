@@ -1,6 +1,6 @@
 # Optics SI Data Managment Working Group
 
-TODO
+TODO: Put together an official Optics SI Data Management Working Group.  This Working Group is tasked with defining data standards, and strategizing tool development to empower a unified structure for data and metadata within the Optics SI data lake, while maintaining the flexibility necessary to serve the mission for individual Optics-focused surveys.
 
 # Disclaimer
 
